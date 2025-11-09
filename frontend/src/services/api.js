@@ -7,7 +7,47 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 seconds timeout
 })
+
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Add timestamp to prevent caching
+    config.params = {
+      ...config.params,
+      _t: Date.now()
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    // Handle network errors
+    if (error.code === 'ECONNABORTED') {
+      error.message = 'Request timeout. Please check your connection and try again.'
+    } else if (error.code === 'ERR_NETWORK' || !error.response) {
+      error.message = 'Network error. Please check if the backend server is running on port 5000.'
+    } else if (error.response) {
+      // Server responded with error status
+      const status = error.response.status
+      if (status === 404) {
+        error.message = 'API endpoint not found. Please check the backend routes.'
+      } else if (status >= 500) {
+        error.message = 'Server error. Please try again later.'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 
 // Stays API
 export const getStays = (params) => api.get('/api/stays', { params })
@@ -40,5 +80,127 @@ export const aiChat = (data) => api.post('/api/ai/chat', data)
 export const generateItinerary = (data) => api.post('/api/ai/itinerary', data)
 export const aiEventCreate = (data) => api.post('/api/ai/event-create', data)
 
-export default api
+// Translator API with fallback
+const translateTextWithFallback = async (data) => {
+  try {
+    // Try backend API first
+    const response = await api.post('/api/translate', data)
+    return response
+  } catch (error) {
+    console.warn('Backend translation failed, using fallback:', error.message)
+    // Fallback to direct API call
+    return translateTextFallback(data)
+  }
+}
 
+const translateTextFallback = async (data) => {
+  const { text, source_lang, target_lang } = data
+  
+  if (!text || !text.trim()) {
+    throw new Error('No text provided')
+  }
+
+  if (source_lang === target_lang) {
+    return {
+      data: {
+        translated_text: text,
+        original_text: text,
+        source_lang,
+        target_lang,
+        success: true,
+        fallback: true
+      }
+    }
+  }
+
+  try {
+    // Try Google Translate API directly from client
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source_lang}&tl=${target_lang}&dt=t&q=${encodeURIComponent(text)}`
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data && Array.isArray(data) && data[0] && Array.isArray(data[0])) {
+        const translated = data[0].map(item => item[0]).join('')
+        return {
+          data: {
+            translated_text: translated,
+            original_text: text,
+            source_lang,
+            target_lang,
+            success: true,
+            fallback: true
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Fallback translation error:', error)
+  }
+
+  // Last resort: Try MyMemory API
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source_lang}|${target_lang}`
+    const response = await fetch(url)
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.responseStatus === 200 && data.responseData?.translatedText) {
+        return {
+          data: {
+            translated_text: data.responseData.translatedText,
+            original_text: text,
+            source_lang,
+            target_lang,
+            success: true,
+            fallback: true
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('MyMemory fallback error:', error)
+  }
+
+  throw new Error('All translation services are unavailable. Please check your internet connection.')
+}
+
+const detectLanguageWithFallback = async (data) => {
+  try {
+    // Try backend API first
+    const response = await api.post('/api/translate/detect', data)
+    return response
+  } catch (error) {
+    console.warn('Backend language detection failed, using fallback:', error.message)
+    // Fallback: return default
+    return {
+      data: {
+        detected_language: 'en',
+        confidence: 0.5,
+        fallback: true
+      }
+    }
+  }
+}
+
+// Translator API
+export const translateText = translateTextWithFallback
+export const detectLanguage = detectLanguageWithFallback
+
+// Health check function
+export const checkBackendHealth = async () => {
+  try {
+    const response = await api.get('/')
+    return { healthy: true, data: response.data }
+  } catch (error) {
+    return { healthy: false, error: error.message }
+  }
+}
+
+export default api

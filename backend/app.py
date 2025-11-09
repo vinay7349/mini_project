@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from routes.stays_routes import stays_bp
@@ -7,6 +7,7 @@ from routes.emergency_routes import emergency_bp
 from routes.culture_routes import culture_bp
 from routes.events_routes import events_bp
 from routes.ai_routes import ai_bp
+from routes.translator_routes import translator_bp
 from models import db
 
 app = Flask(__name__)
@@ -24,10 +25,11 @@ app.register_blueprint(emergency_bp)
 app.register_blueprint(culture_bp)
 app.register_blueprint(events_bp)
 app.register_blueprint(ai_bp)
+app.register_blueprint(translator_bp)
 
 @app.route('/')
 def index():
-    return {'message': 'SmartStay Navigator API', 'status': 'running'}
+    return jsonify({'message': 'SmartStay Navigator API', 'status': 'running'})
 
 if __name__ == '__main__':
     with app.app_context():

@@ -46,17 +46,35 @@ const MapView = ({ stays = [], touristSpots = [], events = [], userLocation = nu
       markersRef.current.push(marker)
     })
 
-    // Add tourist spot markers
+    // Add tourist spot markers with enhanced popup
     touristSpots.forEach(spot => {
+      // Use different marker colors based on rating
+      let markerColor = 'green' // default
+      if (spot.rating >= 4.5) {
+        markerColor = 'gold'
+      } else if (spot.rating >= 4.0) {
+        markerColor = 'orange'
+      } else if (spot.rating >= 3.5) {
+        markerColor = 'yellow'
+      }
+
       const marker = L.marker([spot.latitude, spot.longitude], {
         icon: L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+          iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${markerColor}.png`,
           iconSize: [25, 41],
           iconAnchor: [12, 41],
         })
       })
         .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>${spot.name}</b><br>${spot.description || ''}`)
+        .bindPopup(`
+          <div style="min-width: 200px;">
+            <b>${spot.name}</b><br>
+            ${spot.category ? `<span style="color: #6366f1;">${spot.category}</span><br>` : ''}
+            ${spot.description ? `${spot.description.substring(0, 100)}${spot.description.length > 100 ? '...' : ''}<br>` : ''}
+            ${spot.distance ? `<span style="color: #059669;">📍 ${spot.distance.toFixed(2)} km away</span><br>` : ''}
+            ${spot.rating ? `<span style="color: #f59e0b;">⭐ ${spot.rating} ${spot.rating >= 4.5 ? 'Excellent' : spot.rating >= 4.0 ? 'Very Good' : ''}</span>` : ''}
+          </div>
+        `)
       markersRef.current.push(marker)
     })
 
