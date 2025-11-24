@@ -3,8 +3,10 @@ import { getEvents, suggestEvents } from '../services/api'
 import EventCard from '../components/EventCard'
 import EventForm from '../components/EventForm'
 import MapView from '../components/MapView'
+import { useAuth } from '../context/AuthContext'
 
 const Events = () => {
+  const { isAuthenticated } = useAuth()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -13,20 +15,18 @@ const Events = () => {
   const [aiSuggestion, setAiSuggestion] = useState('')
 
   useEffect(() => {
-    getCurrentLocation()
     fetchEvents()
   }, [])
 
   const getCurrentLocation = () => {
+    if (!isAuthenticated) return
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          })
-        }
-      )
+      navigator.geolocation.getCurrentPosition((position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        })
+      })
     }
   }
 
@@ -34,7 +34,7 @@ const Events = () => {
     setLoading(true)
     try {
       const queryParams = { ...params }
-      if (userLocation) {
+      if (isAuthenticated && userLocation) {
         queryParams.lat = userLocation.lat
         queryParams.lon = userLocation.lon
       }
@@ -50,8 +50,16 @@ const Events = () => {
   }
 
   useEffect(() => {
+    if (isAuthenticated) {
+      getCurrentLocation()
+    } else {
+      setUserLocation(null)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
     fetchEvents()
-  }, [searchTag, userLocation])
+  }, [searchTag, userLocation, isAuthenticated])
 
   const handleAISuggestion = async () => {
     if (!aiSuggestion.trim()) return
@@ -78,12 +86,24 @@ const Events = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">📅 Public Events & Community</h1>
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all"
+          onClick={() => (isAuthenticated ? setShowForm(!showForm) : alert('Please login to create events.'))}
+          className={`bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-lg transition-all ${
+            isAuthenticated ? 'hover:shadow-lg' : 'opacity-60 cursor-not-allowed'
+          }`}
+          disabled={!isAuthenticated}
         >
           + Create Event
         </button>
       </div>
+
+      {!isAuthenticated && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg">
+          <p className="font-semibold">Login required</p>
+          <p className="text-sm">
+            Create an account or login to publish events and see what’s happening nearest to you.
+          </p>
+        </div>
+      )}
 
       {showForm && (
         <EventForm

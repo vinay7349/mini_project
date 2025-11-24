@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import { getCultureCard, getPlaceStory } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const CultureCard = ({ placeName }) => {
+  const { isAuthenticated } = useAuth()
   const [cultureInfo, setCultureInfo] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setCultureInfo(null)
+      setLoading(false)
+      return
+    }
+
     if (placeName) {
       fetchPlaceStory(placeName)
     } else {
       fetchCultureCard()
     }
-  }, [placeName])
+  }, [placeName, isAuthenticated])
 
   const fetchCultureCard = async () => {
     setLoading(true)
@@ -49,6 +57,17 @@ const CultureCard = ({ placeName }) => {
     } else {
       fetchCultureCard()
     }
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-md text-center border border-indigo-100">
+        <p className="text-lg font-semibold text-gray-800 mb-2">Sign in to unlock culture cards</p>
+        <p className="text-gray-500 text-sm">
+          Create an account to read local stories, traditions, and travel tips tailored for you.
+        </p>
+      </div>
+    )
   }
 
   if (loading) {

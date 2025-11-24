@@ -86,6 +86,34 @@ class Event(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+
+class Friend(db.Model):
+    __tablename__ = 'friends'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    avatar_url = db.Column(db.String(500))
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(255))
+    favorite_place = db.Column(db.String(200))
+    home_city = db.Column(db.String(120))
+    last_checked_in = db.Column(db.DateTime, default=datetime.utcnow)
+    is_online = db.Column(db.Boolean, default=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'avatar_url': self.avatar_url,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'status': self.status,
+            'favorite_place': self.favorite_place,
+            'home_city': self.home_city,
+            'last_checked_in': self.last_checked_in.isoformat() if self.last_checked_in else None,
+            'is_online': self.is_online,
+        }
+
 class EventComment(db.Model):
     __tablename__ = 'event_comments'
     id = db.Column(db.Integer, primary_key=True)

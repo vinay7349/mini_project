@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createEvent, aiEventCreate } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const EventForm = ({ onEventCreated, onClose }) => {
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -13,6 +15,11 @@ const EventForm = ({ onEventCreated, onClose }) => {
     tags: '',
     organizer: ''
   })
+  useEffect(() => {
+    if (user?.name) {
+      setFormData(prev => ({ ...prev, organizer: prev.organizer || user.name }))
+    }
+  }, [user])
   const [useAI, setUseAI] = useState(false)
   const [loading, setLoading] = useState(false)
 

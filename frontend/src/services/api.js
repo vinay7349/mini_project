@@ -13,6 +13,15 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
+    config.headers = config.headers || {}
+
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('smartstay_token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    }
+
     // Add timestamp to prevent caching
     config.params = {
       ...config.params,
@@ -58,6 +67,7 @@ export const createStay = (data) => api.post('/api/stays', data)
 export const getTouristSpots = (params) => api.get('/api/tourist-spots', { params })
 export const getTouristSpot = (id) => api.get(`/api/tourist-spots/${id}`)
 export const createTouristSpot = (data) => api.post('/api/tourist-spots', data)
+export const getPlaceRecommendations = (params) => api.get('/api/tourist-spots/recommendations', { params })
 
 // Events API
 export const getEvents = (params) => api.get('/api/events', { params })
@@ -192,6 +202,14 @@ const detectLanguageWithFallback = async (data) => {
 // Translator API
 export const translateText = translateTextWithFallback
 export const detectLanguage = detectLanguageWithFallback
+
+// Auth API
+export const registerUser = (data) => api.post('/api/auth/register', data)
+export const loginUser = (data) => api.post('/api/auth/login', data)
+export const fetchProfile = () => api.get('/api/auth/me')
+
+// Social API
+export const getFriendConnections = (params) => api.get('/api/friends', { params })
 
 // Health check function
 export const checkBackendHealth = async () => {

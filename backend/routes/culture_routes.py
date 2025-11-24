@@ -1,5 +1,8 @@
-from flask import Blueprint, jsonify, request
 import random
+
+from flask import Blueprint, jsonify, request
+
+from auth_utils import auth_required
 
 culture_bp = Blueprint('culture_bp', __name__)
 
@@ -34,6 +37,7 @@ CULTURE_FACTS = {
 }
 
 @culture_bp.route("/api/culture", methods=["GET"])
+@auth_required
 def get_culture_card():
     """Get a random culture fact/card"""
     location = request.args.get('location', 'default')
@@ -47,6 +51,7 @@ def get_culture_card():
     })
 
 @culture_bp.route("/api/culture/story/<place_name>", methods=["GET"])
+@auth_required
 def get_place_story(place_name):
     """Get a travel story about a specific place"""
     from ai_helper import generate_travel_story
@@ -59,6 +64,7 @@ def get_place_story(place_name):
     })
 
 @culture_bp.route("/api/buzz-feed", methods=["GET"])
+@auth_required
 def get_buzz_feed():
     """Get local buzz feed (news, weather, activities)"""
     location = request.args.get('location', 'default')

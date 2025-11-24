@@ -4,7 +4,7 @@ Run this script to add initial data for testing
 """
 
 from app import app
-from models import db, Stay, TouristSpot, Event
+from models import db, Stay, TouristSpot, Event, Friend
 from datetime import datetime, timedelta
 
 def seed_database():
@@ -145,6 +145,39 @@ def seed_database():
             )
         ]
 
+        friends = [
+            Friend(
+                name="Anita Rao",
+                avatar_url="https://i.pravatar.cc/150?img=32",
+                latitude=13.3452,
+                longitude=74.7389,
+                status="Watching the sunset at Malpe 🌅",
+                favorite_place="Malpe Beach",
+                home_city="Mangaluru",
+                is_online=True,
+            ),
+            Friend(
+                name="Rahul Desai",
+                avatar_url="https://i.pravatar.cc/150?img=12",
+                latitude=13.3381,
+                longitude=74.7523,
+                status="Grabbing coffee near the temple ☕",
+                favorite_place="Sri Krishna Temple",
+                home_city="Mumbai",
+                is_online=False,
+            ),
+            Friend(
+                name="Zara Khan",
+                avatar_url="https://i.pravatar.cc/150?img=47",
+                latitude=13.3522,
+                longitude=74.7429,
+                status="Cycling along the coast 🚲",
+                favorite_place="City Center Promenade",
+                home_city="Dubai",
+                is_online=True,
+            ),
+        ]
+
         # Add to database
         for stay in stays:
             existing = Stay.query.filter_by(name=stay.name).first()
@@ -161,11 +194,17 @@ def seed_database():
             if not existing:
                 db.session.add(event)
 
+        for friend in friends:
+            existing = Friend.query.filter_by(name=friend.name).first()
+            if not existing:
+                db.session.add(friend)
+
         db.session.commit()
         print("✅ Sample data seeded successfully!")
         print(f"   - {len(stays)} stays added")
         print(f"   - {len(tourist_spots)} tourist spots added")
         print(f"   - {len(events)} events added")
+        print(f"   - {len(friends)} friends connected")
 
 if __name__ == '__main__':
     seed_database()

@@ -1,7 +1,10 @@
-from flask import Blueprint, jsonify, request
-from models import db, Event, EventComment
 from datetime import datetime
 import math
+
+from flask import Blueprint, jsonify, request, g
+
+from auth_utils import auth_required, get_optional_user
+from models import db, Event, EventComment
 
 events_bp = Blueprint('events_bp', __name__)
 
@@ -13,11 +16,16 @@ def get_events():
     max_distance = request.args.get('distance', type=float, default=50.0)
     tag = request.args.get('tag')
     date_from = request.args.get('date_from')
-    
+
+    if lat is not None and lon is not None:
+        user = get_optional_user()
+        if not user:
+            return jsonify({'error': 'Login required to view nearby events'}), 401
+
     events = Event.query.all()
-    
+
     # Filter by location if provided
-    if lat and lon:
+    if lat is not None and lon is not None:
         filtered_events = []
         for event in events:
             if event.latitude and event.longitude:
@@ -48,6 +56,7 @@ def get_event(event_id):
     return jsonify(event_dict)
 
 @events_bp.route("/api/events", methods=["POST"])
+@auth_required
 def post_event():
     """Create a new event"""
     data = request.json
@@ -68,6 +77,8 @@ def post_event():
     else:
         event_date = datetime.now()
     
+    organizer = data.get("organizer") or g.current_user.get('name') or "Anonymous"
+
     new_event = Event(
         title=data.get("title"),
         description=data.get("description"),
@@ -77,7 +88,7 @@ def post_event():
         date=event_date,
         contact=data.get("contact", ""),
         tags=data.get("tags", ""),
-        organizer=data.get("organizer", "Anonymous")
+        organizer=organizer
     )
     db.session.add(new_event)
     db.session.commit()

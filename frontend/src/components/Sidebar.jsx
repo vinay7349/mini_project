@@ -1,8 +1,11 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const Sidebar = () => {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { isAuthenticated, user, logout } = useAuth()
 
   const navItems = [
     { path: '/', icon: '🏠', label: 'Home' },
@@ -39,7 +42,33 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      <div className="mt-8 pt-8 border-t border-indigo-700">
+      <div className="mt-8 space-y-4 pt-8 border-t border-indigo-700">
+        <div className="bg-white/10 rounded-xl p-4">
+          {isAuthenticated ? (
+            <>
+              <p className="text-sm text-indigo-200">Logged in as</p>
+              <p className="text-lg font-semibold">{user?.name}</p>
+              <button
+                onClick={logout}
+                className="mt-3 w-full bg-white text-indigo-900 font-semibold py-2 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-indigo-100">
+                Sign in to create events and unlock culture insights.
+              </p>
+              <button
+                onClick={() => navigate('/auth')}
+                className="mt-3 w-full bg-white text-indigo-900 font-semibold py-2 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                Login / Register
+              </button>
+            </>
+          )}
+        </div>
         <p className="text-xs text-indigo-300 text-center">
           team mind_master © 2025
         </p>

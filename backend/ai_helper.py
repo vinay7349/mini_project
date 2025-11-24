@@ -1,8 +1,6 @@
 import os
-import json
 import random
 
-# Mock AI responses for offline mode or when API key is not set
 MOCK_AI_RESPONSES = {
     "greeting": [
         "Hello! I'm your AI travel companion. How can I help you explore today?",
@@ -26,36 +24,98 @@ MOCK_AI_RESPONSES = {
     ]
 }
 
+GOOGLE_MODEL_NAME = os.getenv("GOOGLE_AI_MODEL", "gemini-1.5-flash")
+
+
 def get_ai_response(prompt, api_key=None):
     """
-    Get AI response from OpenAI API or use mock responses
-    
-    Args:
-        prompt: User's input/question
-        api_key: OpenAI API key (optional)
-    
-    Returns:
-        AI generated response or mock response
+    Try Google Generative AI (Gemini) first, then OpenAI, else mock replies.
     """
-    if api_key:
-        try:
-            import openai
-            openai.api_key = api_key
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful AI travel assistant for SmartStay Navigator. Provide friendly, informative, and concise travel advice."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=200,
-                temperature=0.7
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"AI API Error: {e}")
-            return get_mock_response(prompt)
-    else:
-        return get_mock_response(prompt)
+    prompt = prompt or "Hello!"
+
+    google_key = os.getenv("GOOGLE_API_KEY")
+    if google_key:
+        response = _get_google_response(prompt, google_key)
+        if response:
+            return response
+
+    openai_key = api_key or os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        response = _get_openai_response(prompt, openai_key)
+        if response:
+            return response
+
+    return get_mock_response(prompt)
+
+
+def _get_google_response(prompt, api_key):
+    """Send the prompt to Google Generative AI."""
+    try:
+        import google.generativeai as genai
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            model_name=GOOGLE_MODEL_NAME,
+            system_instruction=(
+                "You are a cheerful yet concise travel companion for SmartStay Navigator. "
+                "Offer practical tips, local insights, and helpful cultural etiquette."
+            ),
+        )
+
+        response = model.generate_content(
+            [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ],
+                }
+            ],
+            safety_settings=[
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+            ],
+        )
+
+        if response and getattr(response, "text", None):
+            return response.text.strip()
+
+        if response and response.candidates:
+            for candidate in response.candidates:
+                content = getattr(candidate, "content", None)
+                if content and content.parts:
+                    texts = [part.text for part in content.parts if hasattr(part, "text")]
+                    if texts:
+                        return " ".join(texts).strip()
+    except Exception as exc:
+        print(f"Google AI error: {exc}")
+    return None
+
+
+def _get_openai_response(prompt, api_key):
+    """Send the prompt to OpenAI ChatCompletion if configured."""
+    try:
+        import openai
+
+        openai.api_key = api_key
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful AI travel assistant for SmartStay Navigator. Provide friendly, informative, and concise travel advice."
+                },
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        print(f"OpenAI error: {exc}")
+    return None
 
 def get_mock_response(prompt):
     """Generate mock AI response based on prompt keywords"""

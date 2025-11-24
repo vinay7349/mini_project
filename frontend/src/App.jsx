@@ -11,6 +11,7 @@ import EmergencyPanel from './components/EmergencyPanel'
 import CultureCard from './components/CultureCard'
 import OfflineAlert from './components/OfflineAlert'
 import AIChatBox from './components/AIChatBox'
+import AuthPage from './pages/Auth'
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
@@ -44,6 +45,7 @@ function App() {
             <Route path="/emergency" element={<EmergencyPanel />} />
             <Route path="/culture" element={<CultureCard />} />
             <Route path="/ai-chat" element={<AIChat />} />
+            <Route path="/auth" element={<AuthPage />} />
           </Routes>
         </main>
         

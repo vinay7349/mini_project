@@ -37,6 +37,49 @@ def get_tourist_spots():
     
     return jsonify([spot.to_dict() for spot in spots])
 
+
+@tourist_bp.route("/api/tourist-spots/recommendations", methods=["GET"])
+def get_tourist_recommendations():
+    """Return recommended spots using rating/distance weighting."""
+    lat = request.args.get('lat', type=float)
+    lon = request.args.get('lon', type=float)
+    limit = request.args.get('limit', type=int, default=5)
+    preference = request.args.get('preference', default='balanced')
+
+    spots = TouristSpot.query.all()
+    recommendations = []
+
+    for spot in spots:
+        spot_dict = spot.to_dict()
+        rating = spot.rating or 0
+        distance = None
+
+        if lat is not None and lon is not None:
+            distance = calculate_distance(lat, lon, spot.latitude, spot.longitude)
+            spot_dict['distance'] = round(distance, 2)
+
+        rating_score = (rating / 5) * 0.65
+        proximity_score = 0
+        if distance is not None:
+            # Anything within 2km is perfect, 20km+ contributes very little.
+            proximity_score = max(0, 1 - (distance / 20))
+            proximity_score *= 0.35
+        else:
+            proximity_score = 0.15  # slight boost when distance unknown
+
+        combined_score = rating_score + proximity_score
+        spot_dict['score'] = round(combined_score, 3)
+        recommendations.append(spot_dict)
+
+    if preference == 'closest' and lat is not None and lon is not None:
+        recommendations.sort(key=lambda x: x.get('distance', float('inf')))
+    elif preference == 'rating':
+        recommendations.sort(key=lambda x: x.get('rating', 0), reverse=True)
+    else:
+        recommendations.sort(key=lambda x: x.get('score', 0), reverse=True)
+
+    return jsonify(recommendations[:limit])
+
 @tourist_bp.route("/api/tourist-spots/<int:spot_id>", methods=["GET"])
 def get_tourist_spot(spot_id):
     """Get a specific tourist spot by ID"""
