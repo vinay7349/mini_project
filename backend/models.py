@@ -68,6 +68,8 @@ class Event(db.Model):
     tags = db.Column(db.String(300))
     organizer = db.Column(db.String(200))
     interested_count = db.Column(db.Integer, default=0)
+    visibility_radius_km = db.Column(db.Float, default=10.0)  # Radius in km - only people within this radius can see
+    created_by = db.Column(db.String(200))  # User ID or email who created the event
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -83,6 +85,8 @@ class Event(db.Model):
             'tags': self.tags,
             'organizer': self.organizer,
             'interested_count': self.interested_count,
+            'visibility_radius_km': self.visibility_radius_km,
+            'created_by': self.created_by,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

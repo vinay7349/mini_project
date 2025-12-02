@@ -40,11 +40,29 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
+    // Check if we're offline
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      error.isOffline = true
+      error.message = 'You are currently offline. Some features may not be available.'
+      // Don't reject for offline - return a graceful response
+      return Promise.resolve({
+        data: null,
+        offline: true,
+        message: error.message
+      })
+    }
+
     // Handle network errors
     if (error.code === 'ECONNABORTED') {
       error.message = 'Request timeout. Please check your connection and try again.'
     } else if (error.code === 'ERR_NETWORK' || !error.response) {
-      error.message = 'Network error. Please check if the backend server is running on port 5000.'
+      // Check if backend is reachable
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        error.message = 'Cannot connect to server. The backend may be offline or unreachable.'
+      } else {
+        error.message = 'You are currently offline. Please check your internet connection.'
+        error.isOffline = true
+      }
     } else if (error.response) {
       // Server responded with error status
       const status = error.response.status
@@ -54,6 +72,17 @@ api.interceptors.response.use(
         error.message = 'Server error. Please try again later.'
       }
     }
+    
+    // For offline errors, return a graceful response instead of rejecting
+    if (error.isOffline) {
+      return Promise.resolve({
+        data: null,
+        offline: true,
+        message: error.message,
+        error: error
+      })
+    }
+    
     return Promise.reject(error)
   }
 )
@@ -210,6 +239,10 @@ export const fetchProfile = () => api.get('/api/auth/me')
 
 // Social API
 export const getFriendConnections = (params) => api.get('/api/friends', { params })
+
+// Enhanced Map API
+export const suggestPlaces = (data) => api.post('/api/map/places/suggest', data)
+export const calculateRoute = (data) => api.post('/api/map/route', data)
 
 // Health check function
 export const checkBackendHealth = async () => {

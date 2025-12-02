@@ -13,7 +13,6 @@ const MapView = ({
   stays = [],
   touristSpots = [],
   events = [],
-  friends = [],
   recommendedSpots = [],
   userLocation = null,
 }) => {
@@ -164,38 +163,6 @@ const MapView = ({
       }
     })
 
-    friends.forEach(friend => {
-      if (!friend.latitude || !friend.longitude) return
-      const marker = L.marker([friend.latitude, friend.longitude], {
-        icon: L.divIcon({
-          className: 'friend-marker',
-          html: `
-            <div style="display:flex;flex-direction:column;align-items:center;">
-              <div style="width:36px;height:36px;border-radius:9999px;border:2px solid ${friend.is_online ? '#22c55e' : '#94a3b8'};overflow:hidden;box-shadow:0 2px 6px rgba(15,23,42,0.25);">
-                <img src="${friend.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(friend.name || 'Friend')}" 
-                     alt="${friend.name}"
-                     style="width:100%;height:100%;object-fit:cover;" />
-              </div>
-              <span style="margin-top:4px;background:#fff;padding:2px 6px;border-radius:9999px;font-size:11px;font-weight:600;color:#0f172a;box-shadow:0 2px 6px rgba(15,23,42,0.15);">
-                ${friend.name?.split(' ')[0] || 'Friend'}
-              </span>
-            </div>
-          `,
-          iconSize: [40, 40],
-          iconAnchor: [10, 40],
-        })
-      })
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`
-          <div style="min-width: 220px;">
-            <b>${friend.name}</b><br>
-            ${friend.status ? `${friend.status}<br>` : ''}
-            ${friend.favorite_place ? `<span style="color:#6366f1;">Loves ${friend.favorite_place}</span><br>` : ''}
-            ${friend.distance ? `<span style="color:#10b981;">📍 ${friend.distance.toFixed(2)} km away</span>` : ''}
-          </div>
-        `)
-      markersRef.current.push(marker)
-    })
 
     if (userLocation) {
       const userMarker = L.marker([userLocation.lat, userLocation.lon], {
@@ -209,7 +176,7 @@ const MapView = ({
         .bindPopup('<b>Your Location</b>')
       markersRef.current.push(userMarker)
     }
-  }, [stays, touristSpots, events, friends, recommendedSpots, userLocation])
+  }, [stays, touristSpots, events, recommendedSpots, userLocation])
 
   return (
     <div className="relative">

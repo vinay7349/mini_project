@@ -14,6 +14,8 @@ from routes.auth_routes import auth_bp  # noqa: E402
 from routes.culture_routes import culture_bp  # noqa: E402
 from routes.emergency_routes import emergency_bp  # noqa: E402
 from routes.events_routes import events_bp  # noqa: E402
+from routes.map_routes import map_bp  # noqa: E402
+from routes.admin_routes import admin_bp  # noqa: E402
 from routes.social_routes import social_bp  # noqa: E402
 from routes.stays_routes import stays_bp  # noqa: E402
 from routes.tourist_routes import tourist_bp  # noqa: E402
@@ -45,6 +47,8 @@ app.register_blueprint(ai_bp)
 app.register_blueprint(translator_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(social_bp)
+app.register_blueprint(map_bp)
+app.register_blueprint(admin_bp)
 
 
 def _mongo_connected():

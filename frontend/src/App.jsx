@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Places from './pages/Places'
+import EnhancedPlaces from './pages/EnhancedPlaces'
 import Stays from './pages/Stays'
 import Events from './pages/Events'
 import AIChat from './pages/AIChat'
@@ -12,6 +13,8 @@ import CultureCard from './components/CultureCard'
 import OfflineAlert from './components/OfflineAlert'
 import AIChatBox from './components/AIChatBox'
 import AuthPage from './pages/Auth'
+import Admin from './pages/Admin'
+import AdminLogin from './pages/AdminLogin'
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
@@ -39,13 +42,16 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/places" element={<Places />} />
+            <Route path="/places/enhanced" element={<EnhancedPlaces />} />
             <Route path="/stays" element={<Stays />} />
             <Route path="/events" element={<Events />} />
             <Route path="/translator" element={<TranslatorPage />} />
             <Route path="/emergency" element={<EmergencyPanel />} />
             <Route path="/culture" element={<CultureCard />} />
             <Route path="/ai-chat" element={<AIChat />} />
-            <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
         

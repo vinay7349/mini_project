@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { markInterest, addComment, getEvent } from '../services/api'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const EventCard = ({ event, onUpdate }) => {
+  const { isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [commentAuthor, setCommentAuthor] = useState('')
@@ -31,6 +35,12 @@ const EventCard = ({ event, onUpdate }) => {
   }
 
   const handleInterest = async () => {
+    if (!isAuthenticated) {
+      alert('Please login to mark interest in events.')
+      navigate('/auth')
+      return
+    }
+
     try {
       await markInterest(event.id)
       setFullEvent(prev => ({ ...prev, interested_count: (prev.interested_count || 0) + 1 }))
@@ -41,11 +51,17 @@ const EventCard = ({ event, onUpdate }) => {
   }
 
   const handleAddComment = async () => {
+    if (!isAuthenticated) {
+      alert('Please login to add comments.')
+      navigate('/auth')
+      return
+    }
+
     if (!commentText.trim()) return
 
     try {
       await addComment(event.id, {
-        author: commentAuthor || 'Anonymous',
+        author: commentAuthor || user?.name || 'Anonymous',
         comment: commentText
       })
       setCommentText('')
@@ -56,6 +72,15 @@ const EventCard = ({ event, onUpdate }) => {
     } catch (error) {
       console.error('Error adding comment:', error)
     }
+  }
+
+  const handleShowComments = () => {
+    if (!isAuthenticated) {
+      alert('Please login to view comments and messages.')
+      navigate('/auth')
+      return
+    }
+    setShowComments(!showComments)
   }
 
   return (
@@ -94,8 +119,9 @@ const EventCard = ({ event, onUpdate }) => {
         </button>
 
         <button
-          onClick={() => setShowComments(!showComments)}
+          onClick={handleShowComments}
           className="text-indigo-600 hover:text-indigo-800"
+          disabled={!isAuthenticated}
         >
           💬 {fullEvent.comments?.length || 0} Comments
         </button>
@@ -122,28 +148,41 @@ const EventCard = ({ event, onUpdate }) => {
             </>
           )}
 
-          <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Your name (optional)"
-              value={commentAuthor}
-              onChange={(e) => setCommentAuthor(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
-            <textarea
-              placeholder="Write a comment..."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              rows="2"
-            />
-            <button
-              onClick={handleAddComment}
-              className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-            >
-              Add Comment
-            </button>
-          </div>
+          {isAuthenticated ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder={`Your name (optional) - Logged in as ${user?.name || 'User'}`}
+                value={commentAuthor}
+                onChange={(e) => setCommentAuthor(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+              <textarea
+                placeholder="Write a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                rows="2"
+              />
+              <button
+                onClick={handleAddComment}
+                className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              >
+                Add Comment
+              </button>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-center">
+              <p className="text-yellow-800 text-sm font-semibold mb-2">Login Required</p>
+              <p className="text-yellow-700 text-xs mb-3">You must be logged in to view and add comments.</p>
+              <button
+                onClick={() => navigate('/auth')}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm"
+              >
+                Login / Register
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

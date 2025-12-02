@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { 
   getTouristSpots, 
-  getPlaceRecommendations, 
-  getFriendConnections 
+  getPlaceRecommendations
 } from '../services/api'
 import MapView from '../components/MapView'
 
@@ -17,10 +16,6 @@ const Places = () => {
   const [recommendedSpots, setRecommendedSpots] = useState([])
   const [recommendationsLoading, setRecommendationsLoading] = useState(false)
   const [preference, setPreference] = useState('balanced')
-  const [friends, setFriends] = useState([])
-  const [friendsSummary, setFriendsSummary] = useState(null)
-  const [friendsLoading, setFriendsLoading] = useState(false)
-  const [radiusFilter, setRadiusFilter] = useState(10)
 
   useEffect(() => {
     getCurrentLocation()
@@ -84,31 +79,9 @@ const Places = () => {
     }
   }
 
-  const fetchFriends = async () => {
-    if (!userLocation) return
-    setFriendsLoading(true)
-    try {
-      const response = await getFriendConnections({
-        lat: userLocation.lat,
-        lon: userLocation.lon,
-        radius: radiusFilter,
-      })
-      setFriends(response.data?.friends || [])
-      setFriendsSummary(response.data?.summary || null)
-    } catch (error) {
-      console.error('Error fetching friends:', error)
-    } finally {
-      setFriendsLoading(false)
-    }
-  }
-
   useEffect(() => {
     fetchRecommendations()
   }, [userLocation, preference])
-
-  useEffect(() => {
-    fetchFriends()
-  }, [userLocation, radiusFilter])
 
   // Sort places based on selected sort option
   const sortedSpots = [...touristSpots].sort((a, b) => {
@@ -283,75 +256,7 @@ const Places = () => {
         touristSpots={touristSpots} 
         userLocation={userLocation} 
         recommendedSpots={recommendedSpots}
-        friends={friends}
       />
-
-      {userLocation && (
-        <div className="bg-white rounded-lg shadow border border-slate-100 p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm uppercase tracking-wide text-sky-500 font-semibold">Friends nearby</p>
-              <h2 className="text-2xl font-bold text-gray-800">See who is exploring with you</h2>
-            </div>
-            <div className="flex items-center space-x-3">
-              <label className="text-sm text-gray-500">Radius: {radiusFilter} km</label>
-              <input
-                type="range"
-                min="2"
-                max="30"
-                step="1"
-                value={radiusFilter}
-                onChange={(e) => setRadiusFilter(Number(e.target.value))}
-                className="w-40 accent-sky-500"
-              />
-            </div>
-          </div>
-          {friendsSummary && (
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              <span>🟢 {friendsSummary.online} online</span>
-              <span>👥 {friendsSummary.total} friends in radius</span>
-              {friendsSummary.closest_friend && (
-                <span>📍 Closest: {friendsSummary.closest_friend}</span>
-              )}
-            </div>
-          )}
-          {friendsLoading ? (
-            <div className="text-center py-6 text-gray-500">Locating your travel buddies...</div>
-          ) : friends.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">No friends are nearby. Expand the radius to catch more!</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {friends.map(friend => (
-                <div key={friend.id} className="border border-slate-200 rounded-lg p-3 flex items-center gap-3">
-                  <img
-                    src={
-                      friend.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.name || 'Friend')}&background=E0F2FE&color=0F172A`
-                    }
-                    alt={friend.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-slate-100"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-gray-800">{friend.name}</p>
-                      {friend.is_online && <span className="text-xs text-green-600 font-semibold">online</span>}
-                    </div>
-                    {friend.distance && (
-                      <p className="text-sm text-gray-500">📍 {friend.distance.toFixed(2)} km away</p>
-                    )}
-                    {friend.status && (
-                      <p className="text-sm text-gray-600 truncate">{friend.status}</p>
-                    )}
-                    {friend.last_checked_in_human && (
-                      <p className="text-xs text-gray-400">Last seen {friend.last_checked_in_human}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">

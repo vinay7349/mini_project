@@ -208,7 +208,19 @@ smartstay-navigator/
 - **Floating AI Help Button**: Accessible on all pages
 - **Offline Banner**: Shows when using cached data
 
+## 🔧 Configuration
 
+### OpenAI API (Optional)
+
+To use OpenAI GPT API instead of mock responses, set your API key in the frontend when making AI requests:
+
+```javascript
+await aiChat({ message: "your question", api_key: "your-api-key" })
+```
+
+Alternatively, you can set it as an environment variable in the backend.
+
+## 📝 Usage Examples
 
 ### Creating an Event
 
@@ -233,6 +245,13 @@ smartstay-navigator/
 3. View results on map and in list
 4. Click "Call Now" to contact directly
 
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open source and available under the MIT License.
 
 ## 🙏 Acknowledgments
 

@@ -10,42 +10,37 @@ events_bp = Blueprint('events_bp', __name__)
 
 @events_bp.route("/api/events", methods=["GET"])
 def get_events():
-    """Get all events or filter by location/date"""
+    """Get events - only show events within visibility radius of user's location"""
     lat = request.args.get('lat', type=float)
     lon = request.args.get('lon', type=float)
-    max_distance = request.args.get('distance', type=float, default=50.0)
-    tag = request.args.get('tag')
     date_from = request.args.get('date_from')
 
-    if lat is not None and lon is not None:
-        user = get_optional_user()
-        if not user:
-            return jsonify({'error': 'Login required to view nearby events'}), 401
+    # Require location for radius-based visibility
+    if lat is None or lon is None:
+        return jsonify({'error': 'Location required. Please enable location access to view events.'}), 400
+    
+    user = get_optional_user()
+    if not user:
+        return jsonify({'error': 'Login required to view events'}), 401
 
     events = Event.query.all()
+    filtered_events = []
 
-    # Filter by location if provided
-    if lat is not None and lon is not None:
-        filtered_events = []
-        for event in events:
-            if event.latitude and event.longitude:
-                distance = calculate_distance(lat, lon, event.latitude, event.longitude)
-                if distance <= max_distance:
-                    event_dict = event.to_dict()
-                    event_dict['distance'] = round(distance, 2)
-                    filtered_events.append(event_dict)
-        events_list = filtered_events
-    else:
-        events_list = [event.to_dict() for event in events]
-    
-    # Filter by tag
-    if tag:
-        events_list = [e for e in events_list if tag.lower() in (e.get('tags', '') or '').lower()]
+    # Filter events based on visibility radius
+    for event in events:
+        if event.latitude and event.longitude:
+            distance = calculate_distance(lat, lon, event.latitude, event.longitude)
+            # Only show events within the creator's set visibility radius
+            visibility_radius = event.visibility_radius_km or 10.0  # Default 10km
+            if distance <= visibility_radius:
+                event_dict = event.to_dict()
+                event_dict['distance'] = round(distance, 2)
+                filtered_events.append(event_dict)
     
     # Sort by date
-    events_list.sort(key=lambda x: x.get('date', ''))
+    filtered_events.sort(key=lambda x: x.get('date', ''))
     
-    return jsonify(events_list)
+    return jsonify(filtered_events)
 
 @events_bp.route("/api/events/<int:event_id>", methods=["GET"])
 def get_event(event_id):
@@ -78,6 +73,8 @@ def post_event():
         event_date = datetime.now()
     
     organizer = data.get("organizer") or g.current_user.get('name') or "Anonymous"
+    created_by = g.current_user.get('email') or g.current_user.get('id') or "anonymous"
+    visibility_radius = data.get("visibility_radius_km", 10.0)  # Default 10km
 
     new_event = Event(
         title=data.get("title"),
@@ -88,7 +85,9 @@ def post_event():
         date=event_date,
         contact=data.get("contact", ""),
         tags=data.get("tags", ""),
-        organizer=organizer
+        organizer=organizer,
+        visibility_radius_km=visibility_radius,
+        created_by=created_by
     )
     db.session.add(new_event)
     db.session.commit()

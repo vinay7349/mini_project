@@ -13,7 +13,8 @@ const EventForm = ({ onEventCreated, onClose }) => {
     date: '',
     contact: '',
     tags: '',
-    organizer: ''
+    organizer: '',
+    visibility_radius_km: 10  // Default 10km radius
   })
   useEffect(() => {
     if (user?.name) {
@@ -81,7 +82,8 @@ const EventForm = ({ onEventCreated, onClose }) => {
         date: '',
         contact: '',
         tags: '',
-        organizer: ''
+        organizer: '',
+        visibility_radius_km: 10
       })
     } catch (error) {
       console.error('Error creating event:', error)
@@ -199,18 +201,39 @@ const EventForm = ({ onEventCreated, onClose }) => {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tags (comma-separated)
-          </label>
-          <input
-            type="text"
-            name="tags"
-            value={formData.tags}
-            onChange={handleChange}
-            placeholder="e.g., adventure, beach, music"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tags (comma-separated)
+            </label>
+            <input
+              type="text"
+              name="tags"
+              value={formData.tags}
+              onChange={handleChange}
+              placeholder="e.g., adventure, beach, music"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Visibility Radius (km) *
+            </label>
+            <input
+              type="number"
+              name="visibility_radius_km"
+              value={formData.visibility_radius_km}
+              onChange={handleChange}
+              min="1"
+              max="50"
+              step="1"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Only people within this radius can see your event
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

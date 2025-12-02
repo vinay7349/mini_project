@@ -7,7 +7,25 @@ const AIChatBox = ({ onClose }) => {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [userLocation, setUserLocation] = useState(null)
   const messagesEndRef = useRef(null)
+
+  useEffect(() => {
+    // Get user location for location-based suggestions
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          })
+        },
+        () => {
+          console.log('Location access denied')
+        }
+      )
+    }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -21,17 +39,28 @@ const AIChatBox = ({ onClose }) => {
     if (!input.trim()) return
 
     const userMessage = { role: 'user', content: input }
+    const currentInput = input
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setLoading(true)
 
     try {
-      const response = await aiChat({ message: input })
+      // Send conversation history for context
+      const conversationHistory = messages
+        .filter(msg => msg.role !== 'system')
+        .map(msg => ({ role: msg.role, content: msg.content }))
+      
+      const response = await aiChat({ 
+        message: currentInput,
+        conversation_history: conversationHistory,
+        user_location: userLocation  // Send location for location-based suggestions
+      })
+      
       setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }])
     } catch (error) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again or check your connection.' 
+        content: 'Sorry, I encountered an error. Please try again or check your connection. Make sure OPENAI_API_KEY is set in your backend .env file for ChatGPT integration.' 
       }])
     } finally {
       setLoading(false)

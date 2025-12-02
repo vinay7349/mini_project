@@ -1,20 +1,38 @@
 from flask import Blueprint, jsonify, request
+import os
 from ai_helper import get_ai_response, generate_itinerary
 
 ai_bp = Blueprint('ai_bp', __name__)
 
 @ai_bp.route("/api/ai/chat", methods=["POST"])
 def ai_chat():
-    """AI chatbot endpoint"""
-    data = request.json
+    """AI chatbot endpoint with conversation history and location support"""
+    data = request.json or {}
     prompt = data.get("message", "")
     api_key = data.get("api_key")  # Optional API key
+    conversation_history = data.get("conversation_history", [])  # Support conversation context
+    user_location = data.get("user_location")  # {lat, lon} for location-based suggestions
     
-    response = get_ai_response(prompt, api_key)
+    # Validate conversation history format
+    if conversation_history:
+        # Ensure it's a list of dicts with 'role' and 'content'
+        valid_history = []
+        for msg in conversation_history:
+            if isinstance(msg, dict) and "role" in msg and "content" in msg:
+                if msg["role"] in ["user", "assistant", "system"]:
+                    valid_history.append({
+                        "role": msg["role"],
+                        "content": str(msg["content"])
+                    })
+        conversation_history = valid_history[-10:]  # Keep last 10 messages for context
+    
+    response = get_ai_response(prompt, api_key, conversation_history, user_location)
     
     return jsonify({
         "response": response,
-        "prompt": prompt
+        "prompt": prompt,
+        "model": "chatgpt" if os.getenv("OPENAI_API_KEY") else "gemini" if os.getenv("GOOGLE_API_KEY") else "mock",
+        "location_enhanced": bool(user_location)
     })
 
 @ai_bp.route("/api/ai/itinerary", methods=["POST"])

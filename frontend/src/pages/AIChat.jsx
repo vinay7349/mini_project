@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { aiChat, generateItinerary } from '../services/api'
 
 const AIChat = () => {
@@ -16,6 +16,24 @@ const AIChat = () => {
     location: '',
     duration: '1 day'
   })
+  const [userLocation, setUserLocation] = useState(null)
+
+  useEffect(() => {
+    // Get user location for location-based suggestions
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          })
+        },
+        () => {
+          console.log('Location access denied or unavailable')
+        }
+      )
+    }
+  }, [])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -32,16 +50,29 @@ const AIChat = () => {
         setItineraryMode(true)
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: 'I can help you create an itinerary! Please provide the budget, location, and duration.'
+          content: 'I can help you create a detailed itinerary! Please provide the budget, location, and duration.'
         }])
       } else {
-        const response = await aiChat({ message: currentInput })
-        setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }])
+        // Send conversation history for context
+        const conversationHistory = messages
+          .filter(msg => msg.role !== 'system') // Exclude system messages
+          .map(msg => ({ role: msg.role, content: msg.content }))
+        
+        const response = await aiChat({ 
+          message: currentInput,
+          conversation_history: conversationHistory,
+          user_location: userLocation  // Send location for location-based suggestions
+        })
+        
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: response.data.response 
+        }])
       }
     } catch (error) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again or check your connection.'
+        content: 'Sorry, I encountered an error. Please try again or check your connection. Make sure OPENAI_API_KEY is set in your backend .env file for ChatGPT integration.'
       }])
     } finally {
       setLoading(false)

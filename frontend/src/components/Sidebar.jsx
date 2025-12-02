@@ -1,11 +1,28 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../services/api'
 
 const Sidebar = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user, logout } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkAdminStatus()
+    }
+  }, [isAuthenticated])
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await api.get('/api/admin/check')
+      setIsAdmin(response.data.is_admin || false)
+    } catch (error) {
+      setIsAdmin(false)
+    }
+  }
 
   const navItems = [
     { path: '/', icon: '🏠', label: 'Home' },
@@ -17,6 +34,14 @@ const Sidebar = () => {
     { path: '/ai-chat', icon: '🤖', label: 'AI Chat' },
     { path: '/culture', icon: '🎭', label: 'Culture' },
   ]
+
+  // Add admin link if user is admin
+  if (isAdmin) {
+    navItems.push({ path: '/admin', icon: '🛡️', label: 'Admin' })
+  } else if (isAuthenticated) {
+    // Show admin login link for authenticated users who aren't admins
+    navItems.push({ path: '/admin/login', icon: '🛡️', label: 'Admin Login' })
+  }
 
   return (
     <aside className="w-64 bg-gradient-to-b from-indigo-900 to-purple-900 text-white p-4 shadow-lg">

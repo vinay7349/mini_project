@@ -200,7 +200,7 @@ def seed_database():
                 db.session.add(friend)
 
         db.session.commit()
-        print("✅ Sample data seeded successfully!")
+        print("[OK] Sample data seeded successfully!")
         print(f"   - {len(stays)} stays added")
         print(f"   - {len(tourist_spots)} tourist spots added")
         print(f"   - {len(events)} events added")
